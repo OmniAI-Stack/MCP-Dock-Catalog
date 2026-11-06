@@ -3,7 +3,7 @@
 Catalog of MCP servers for [MCP Dock](https://github.com/OmniAI-Stack/MCP-Dock). One YAML file per server holds the install settings and the texts in six languages. A build script checks the files and turns them into the JSON the app reads. Every server is reviewed before it is listed.
 
 > [!NOTE]
-> Early prototype. The file format and the way the app loads the catalog may still change. For now the app reads a catalog from a folder on disk (Settings → Server catalog); downloading from the internet, checksum verification and signing come later.
+> Early prototype. The file format may still change. MCP Dock downloads the published `dist/` from this repository, checks the signature of `manifest.json` and the checksum of every file, and keeps the copy on disk. For testing, the app can also read a catalog from a folder (Settings → Server catalog); that folder is not signed.
 
 ## Technologies
 
@@ -12,12 +12,13 @@ Catalog of MCP servers for [MCP Dock](https://github.com/OmniAI-Stack/MCP-Dock).
 | **YAML** (1.2) | The sources people edit: servers, publishers, categories, tags. Easy to read, allows comments, has no brackets and quotes everywhere. |
 | **JSON** | The generated files in `dist/` that the app reads. JSON is what the app (Rust and TypeScript) parses natively, so the app needs no YAML library. Nobody edits it. |
 | **Node.js** (ES modules, tested with 22 and 24) | Runs the build script `scripts/build.mjs` and the starter `scripts/run.mjs`. Uses only built-in modules (`node:fs`, `node:path`, `node:crypto`, `node:child_process`) plus one package. |
-| **npm** | Runs the commands (`npm run build`, `npm run check`) and installs the package. |
+| **npm** | Runs the commands (`npm run build`, `npm run check`, `npm run keygen`, `npm run release`) and installs the package. |
 | **`yaml` package** (2.8.1) | The only dependency. Reads the YAML files. Pinned to an exact version. |
 | **SHA-256** | The checksums in `manifest.json` and `index.json` (`node:crypto`). They show that a file was not changed or damaged. |
+| **Ed25519** | The signature of `manifest.json` (`dist/manifest.sig`), made and checked with `node:crypto`. The private key stays on the maintainer's computer, the public key is in this repository and in the app. See "Signing". |
 | **Git and GitHub** | Versioning, review of pull requests, tags of the published catalogs. |
 
-Planned, not done yet: signing the manifest with ed25519 and serving `dist/` over HTTPS (for example GitHub Pages), so the app can download the catalog and verify it.
+`dist/` is served as plain files from this repository (`raw.githubusercontent.com`), the app downloads it from there.
 
 There is no database, no server and no framework: the catalog is plain files, and everything the build needs is in this repository.
 
@@ -30,8 +31,14 @@ categories.yaml                 the fixed list of categories, names in six langu
 tags.yaml                       the fixed list of tags, names in six languages
 scripts/build.mjs               checks the sources and generates dist/
 scripts/run.mjs                 entry of `npm run build`: installs the packages on the first run, then runs build.mjs
-package.json                    the `build` and `check` commands, one dependency (`yaml`)
-dist/                           generated JSON for the app, never edited by hand
+scripts/keygen.mjs              creates the signing key pair, once (`npm run keygen`)
+scripts/sign.mjs                signs dist/manifest.json and verifies the signature (`npm run sign`)
+scripts/signing.mjs             helpers shared by the two signing scripts
+package.json                    the commands (`build`, `check`, `keygen`, `sign`, `release`), one dependency (`yaml`)
+signing-public-key.txt          the public key (created by keygen, committed, built into the app)
+_private/                       the private key and private notes, ignored by git, exists only on the maintainer's computer
+dist/                           generated JSON for the app, never edited by hand (manifest.sig is the signature)
+.gitattributes                  forces LF line endings, so the checksums stay valid on every computer
 ```
 
 Servers are grouped by publisher (`servers/google/`, `servers/modelcontextprotocol/`). The folder is only for order: the server `id` is unique in the whole catalog and does not depend on the folder, so a server can move without breaking anybody's installation.
@@ -42,7 +49,9 @@ Run these in a terminal in the repository folder. `npm run build` installs the p
 
 ```
 npm run build     # checks and writes dist/ (installs packages on the first run)
-npm run check     # checks only (CI)
+npm run check     # checks the sources and verifies the signature (CI)
+npm run keygen    # once, maintainer only: creates the signing key pair
+npm run release   # maintainer only: build and sign, use this before publishing
 ```
 
 The build fails when a file is wrong, and it says what to do about it. A mistyped category or tag gets a "Did you mean ...?" and the exact line to add to `tags.yaml` or `categories.yaml`. When the build fails, `dist/` is left untouched. It fails for example on: a missing English text, an unknown category, tag or publisher, a `publisher` that differs from the folder name, a duplicate `id`, a `{{placeholder}}` without an input.
@@ -57,7 +66,7 @@ You edit only the YAML files. `npm run build` reads them and writes the folder `
 4. **Writes the list of servers**, `dist/index.json`: one short line per server (id, name, publisher, category, tags, verified, short English summary, checksum of its detail file). The app shows the whole list from this one small file, without opening any detail.
 5. **Writes the list of short summaries per language**, `dist/index.<lang>.json` (`cs`, `de`, `es`, `fr`, `pt`): just `id → summary` in that language. The app loads only the language it is set to and puts it over the English summary from the list.
 6. **Writes the names** for filters and labels: `dist/categories.json`, `dist/tags.json` and `dist/publishers.json`.
-7. **Writes `dist/manifest.json` last**: the catalog version, the schema number, the minimum app version, the number of servers and a checksum of every other file. The app reads this file first to know what it has.
+7. **Writes `dist/manifest.json` last**: the catalog version, the schema number, the minimum app version, the number of servers and a checksum of every other file. The app reads this file first to know what it has. `npm run release` then signs it (`dist/manifest.sig`).
 
 With the two servers in the catalog now the result is:
 
@@ -196,7 +205,7 @@ What you touch, in order:
    - `texts.en` with `summary`, `description` and a `label` for every input. Add `cs`, `de`, `es`, `fr` and `pt` too if you can, otherwise the user sees English.
 4. **Build:** `npm run build`. The build checks the new file and writes `dist/`. It compares the `publisher`, the `category` and every tag with `publishers.yaml`, `categories.yaml` and `tags.yaml` (see "Categories and tags"). If one of them is missing there, the build stops, says which one and prints the line to add. Add it to the list, then run the build again, until it prints `OK`.
 5. **Try it in MCP Dock:** Settings → Server catalog → Choose catalog folder, pick this repository. The new server appears in Discover. Open it, fill in the inputs and use Test connection where the server has a `test`.
-6. **Commit the YAML files together with `dist/`.** `dist/` is generated, but it is committed, because the app reads it. In a pull request send the new `servers/<publisher>/<id>.yaml`, the changed `publishers.yaml` or `categories.yaml` if any, and the regenerated `dist/`.
+6. **Publish.** `dist/` is generated, but it is committed, because the app reads it, and it must be signed. The maintainer runs `npm run release` and commits the YAML files together with `dist/` (including `manifest.sig`). A contributor sends only the new `servers/<publisher>/<id>.yaml` and the changed `publishers.yaml`, `categories.yaml` or `tags.yaml` if any, in a pull request; `dist/` is built and signed by the maintainer after the merge.
 
 Checklist before you send it:
 
@@ -205,10 +214,20 @@ Checklist before you send it:
 - [ ] `id` is unique and will not change
 - [ ] no secrets or personal paths, the package version is pinned
 - [ ] `texts.en` is complete
-- [ ] `npm run build` passes and `dist/` is committed
+- [ ] `npm run check` passes (the maintainer builds and signs `dist/` with `npm run release` after the merge)
 - [ ] the server installs and, if it has a `test`, the test passes in MCP Dock
 
 Changing an existing server is the same without steps 1 and 2. Removing one means deleting its file and building again. Do not rename the `id` of a server that was already published, add a new file instead and keep the old name in `legacyNames` when the name shown to the user changed.
+
+## Signing
+
+The app only trusts a catalog whose `dist/manifest.json` is signed. The signature (`dist/manifest.sig`, Ed25519) covers the exact bytes of the manifest, and the manifest lists the SHA-256 of every other file, so one signature protects the whole catalog. The public key is in `signing-public-key.txt` and is built into the app. The private key stays in the folder `_private/`, which git ignores, so it never reaches the repository.
+
+- `npm run keygen` creates the key pair once. It refuses to overwrite an existing key and to put the key anywhere in the repository except `_private/`.
+- `npm run release` builds `dist/` and signs it. Use it instead of `npm run build` before every publish, then commit `dist/` including `manifest.sig`.
+- `npm run check` validates the sources and verifies the signature.
+- Only the maintainer who holds the private key can publish a catalog the app accepts. A contributor's pull request changes sources only.
+- Losing the private key means a new app version with a new public key. The app can trust several keys at once for the switch.
 
 ## Versions of the catalog
 

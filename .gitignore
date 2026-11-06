@@ -1,1 +1,11 @@
 node_modules/
+
+# Private key and private notes live here and never go to git
+_private/
+
+# Safety net
+*.pem
+*.key
+signing-key*
+.secrets/
+PRIVATE.md

@@ -3,6 +3,14 @@
   "private": true,
   "type": "module",
   "description": "Catalog of MCP servers for MCP Dock",
-  "scripts": { "build": "node scripts/run.mjs", "check": "node scripts/run.mjs --check" },
-  "dependencies": { "yaml": "2.8.1" }
+  "scripts": {
+    "build": "node scripts/run.mjs",
+    "check": "node scripts/run.mjs --check && node scripts/sign.mjs --verify",
+    "keygen": "node scripts/keygen.mjs",
+    "sign": "node scripts/sign.mjs",
+    "release": "node scripts/run.mjs && node scripts/sign.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.8.1"
+  }
 }
