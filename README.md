@@ -3,7 +3,7 @@
 Catalog of MCP servers for [MCP Dock](https://github.com/OmniAI-Stack/MCP-Dock). One YAML file per server holds the install settings and the texts in six languages. A build script checks the files and turns them into the JSON the app reads. Every server is reviewed before it is listed.
 
 > [!NOTE]
-> Early prototype. The file format may still change. MCP Dock downloads the published `dist/` from this repository, checks the signature of `manifest.json` and the checksum of every file, and keeps the copy on disk. For testing, the app can also read a catalog from a folder (Settings → Server catalog); that folder is not signed.
+> Early prototype. The file format may still change. MCP Dock downloads the published `dist/` from this repository, checks the signature of `manifest.json` and the checksum of every file, and keeps the copy on disk.
 
 ## Technologies
 
@@ -26,6 +26,7 @@ There is no database, no server and no framework: the catalog is plain files, an
 
 ```
 servers/<publisher>/<id>.yaml   one file per server, grouped by who publishes it
+servers/<publisher>/<id>.svg    the icon of the server (or <id>.png), optional
 publishers.yaml                 publisher slug → name and homepage
 categories.yaml                 the fixed list of categories, names in six languages
 tags.yaml                       the fixed list of tags, names in six languages
@@ -37,7 +38,7 @@ scripts/signing.mjs             helpers shared by the two signing scripts
 package.json                    the commands (`build`, `check`, `keygen`, `sign`, `release`), one dependency (`yaml`)
 signing-public-key.txt          the public key (created by keygen, committed, built into the app)
 _private/                       the private key and private notes, ignored by git, exists only on the maintainer's computer
-dist/                           generated JSON for the app, never edited by hand (manifest.sig is the signature)
+dist/                           generated JSON and icons for the app, never edited by hand (manifest.sig is the signature)
 .gitattributes                  forces LF line endings, so the checksums stay valid on every computer
 ```
 
@@ -60,13 +61,13 @@ The build fails when a file is wrong, and it says what to do about it. A mistype
 
 You edit only the YAML files. `npm run build` reads them and writes the folder `dist/` from scratch. Step by step:
 
-1. **Reads** `categories.yaml`, `publishers.yaml` and every `servers/<publisher>/<id>.yaml`.
+1. **Reads** `categories.yaml`, `publishers.yaml`, every `servers/<publisher>/<id>.yaml` and its icon (`<id>.svg` or `<id>.png`) when there is one.
 2. **Checks** them (the rules above). On the first problem it prints it and stops, `dist/` stays as it was.
 3. **Writes one detail file per server**, `dist/servers/<id>.json`: the whole server in one place (install settings plus the texts in all languages). The app opens it when the user opens that server.
 4. **Writes the list of servers**, `dist/index.json`: one short line per server (id, name, publisher, category, tags, verified, short English summary, checksum of its detail file). The app shows the whole list from this one small file, without opening any detail.
 5. **Writes the list of short summaries per language**, `dist/index.<lang>.json` (`cs`, `de`, `es`, `fr`, `pt`): just `id → summary` in that language. The app loads only the language it is set to and puts it over the English summary from the list.
-6. **Writes the names** for filters and labels: `dist/categories.json`, `dist/tags.json` and `dist/publishers.json`.
-7. **Writes `dist/manifest.json` last**: the catalog version, the schema number, the minimum app version, the number of servers and a checksum of every other file. The app reads this file first to know what it has. `npm run release` then signs it (`dist/manifest.sig`).
+6. **Writes the names** for filters and labels: `dist/categories.json`, `dist/tags.json` and `dist/publishers.json`, and **copies the icons** to `dist/icons/<id>.svg` (or `.png`). The detail file and the line in `index.json` get `"icon": "icons/<id>.svg"`.
+7. **Writes `dist/manifest.json` last**: the catalog version, the schema number, the minimum app version, the number of servers and a checksum of every other file, icons included. The app reads this file first to know what it has. `npm run release` then signs it (`dist/manifest.sig`).
 
 With the two servers in the catalog now the result is:
 
@@ -82,6 +83,8 @@ dist/
   servers/
     filesystem.json        everything about Filesystem
     google-stitch.json     everything about Google Stitch
+  icons/
+    google-stitch.svg      only when the server has an icon
 ```
 
 The files exist so the app never has to download everything at once. With thousands of servers it loads `manifest.json`, `index.json` and one `index.<lang>.json` (a few hundred kB) and fetches a server's detail only when it is opened.
@@ -181,6 +184,27 @@ The catalog was NOT built: 1 problem(s). dist/ was left as it was.
 
 **How it is shown.** The build passes the lists to the app in `dist/categories.json` and `dist/tags.json`, and every server carries its category and tags in `dist/index.json`. The app writes the name in the language the user has chosen. Showing categories and tags in the Discover page (labels and filters) is planned and not in the app yet, so for now they are only carried in the data.
 
+## Icons
+
+Every server can have an icon. It is a file next to the server file, with the same name:
+
+```
+servers/google/google-stitch.yaml
+servers/google/google-stitch.svg
+```
+
+Nothing is written into the YAML: the build finds the icon by the file name. A server without an icon is fine, the app shows the initials of its name instead (the build prints a note, not an error).
+
+| | SVG (preferred) | PNG (when there is no SVG) |
+|---|---|---|
+| File | `<id>.svg` | `<id>.png` |
+| Size | at most 50 kB | at most 100 kB, square, at least 128×128 px |
+| Not allowed | `<script>`, event attributes (`onload=` ...), `<foreignObject>`, `DOCTYPE` or `ENTITY`, `javascript:`, links and `url()` to anything outside the file (only `#id` inside the file) | |
+
+The build stops when an icon breaks a rule and says which one. It also stops when a server has both an `.svg` and a `.png`, and when an icon has no server file of the same name. Use the official logo of the product (a square version that is readable at small sizes, on a transparent background). The app shows it on a white tile in light and dark mode.
+
+The icons are copied to `dist/icons/`, listed in `manifest.json` with their checksum and so covered by the signature like everything else. A catalog with icons needs MCP Dock 0.1.43 or newer: the build then writes `minAppVersion: 0.1.43` into the manifest, and an older app says it has to be updated instead of failing.
+
 ## Adding a new server
 
 What you touch, in order:
@@ -195,7 +219,7 @@ What you touch, in order:
        homepage: https://www.notion.so
      ```
      
-2. **Create the file** `servers/<publisher>/<id>.yaml`. Create the folder `servers/<publisher>/` when it does not exist. The easiest start is to copy an existing file with the same kind of transport: `servers/google/google-stitch.yaml` for a remote server with a key, `servers/modelcontextprotocol/filesystem.yaml` for a program started on the computer.
+2. **Create the file** `servers/<publisher>/<id>.yaml`, and put the icon next to it as `<id>.svg` (or `<id>.png`, see "Icons"). Create the folder `servers/<publisher>/` when it does not exist. The easiest start is to copy an existing file with the same kind of transport: `servers/google/google-stitch.yaml` for a remote server with a key, `servers/modelcontextprotocol/filesystem.yaml` for a program started on the computer.
 3. **Fill it in** as described in "A server file" above. The values of `publisher`, `category` and `tags` must exist in the lists, and the build checks that:
    - `id` is new and unique in the whole catalog (the build refuses a duplicate), `publisher` equals the folder name.
    - `category` is one of the ids in `categories.yaml`. A category that is missing there is added there first, with the name in all six languages (otherwise the build fails).
@@ -204,7 +228,7 @@ What you touch, in order:
    - Pin the package version in the command (`@scope/package@1.2.3`).
    - `texts.en` with `summary`, `description` and a `label` for every input. Add `cs`, `de`, `es`, `fr` and `pt` too if you can, otherwise the user sees English.
 4. **Build:** `npm run build`. The build checks the new file and writes `dist/`. It compares the `publisher`, the `category` and every tag with `publishers.yaml`, `categories.yaml` and `tags.yaml` (see "Categories and tags"). If one of them is missing there, the build stops, says which one and prints the line to add. Add it to the list, then run the build again, until it prints `OK`.
-5. **Try it in MCP Dock:** Settings → Server catalog → Choose catalog folder, pick this repository. The new server appears in Discover. Open it, fill in the inputs and use Test connection where the server has a `test`.
+5. **Try it in MCP Dock:** the maintainer runs `npm run release`, commits and pushes. Then Settings → Server catalog → Refresh catalog downloads the new version, and the new server appears in Discover. Open it, fill in the inputs and use Test connection where the server has a `test`.
 6. **Publish.** `dist/` is generated, but it is committed, because the app reads it, and it must be signed. The maintainer runs `npm run release` and commits the YAML files together with `dist/` (including `manifest.sig`). A contributor sends only the new `servers/<publisher>/<id>.yaml` and the changed `publishers.yaml`, `categories.yaml` or `tags.yaml` if any, in a pull request; `dist/` is built and signed by the maintainer after the merge.
 
 Checklist before you send it:
@@ -214,6 +238,7 @@ Checklist before you send it:
 - [ ] `id` is unique and will not change
 - [ ] no secrets or personal paths, the package version is pinned
 - [ ] `texts.en` is complete
+- [ ] the icon (if any) is named like the server file and the build accepts it
 - [ ] `npm run check` passes (the maintainer builds and signs `dist/` with `npm run release` after the merge)
 - [ ] the server installs and, if it has a `test`, the test passes in MCP Dock
 
@@ -233,7 +258,7 @@ The app only trusts a catalog whose `dist/manifest.json` is signed. The signatur
 
 - The catalog version is a date and a counter, `YYYY.MM.DD.N` (for example `2026.11.06.1`). The build bumps it only when the content changed, so building twice gives the same version.
 - `schema` is a separate whole number that changes only when the generated format breaks. An app that does not know the schema refuses the catalog and keeps the one it has.
-- `minAppVersion` in the manifest tells which app version can read the catalog.
+- `minAppVersion` in the manifest tells which app version can read the catalog. The build sets it to 0.1.43 as soon as the catalog has an icon.
 - A server has no version of its own: its checksum in `index.json` is enough to know it changed. The package version a server starts is pinned inside its `transport`.
 - Planned: every published catalog gets a Git tag (`catalog-2026.11.06.1`), so an older state can be restored. Not done yet.
 

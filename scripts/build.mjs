@@ -13,9 +13,12 @@ const check = process.argv.includes("--check");
 
 const SCHEMA = 1; // bump only on a breaking change of the generated format
 const MIN_APP = "0.1.32";
+const MIN_APP_ICONS = "0.1.43"; // first app version that downloads icons
+const ICON_MAX = { svg: 50 * 1024, png: 100 * 1024 };
 const LANGS = ["en", "cs", "de", "es", "fr", "pt"];
 const errors = []; // { where, msg, hint }
 const err = (where, msg, hint) => errors.push({ where, msg, hint });
+const warnings = [];
 
 /** The closest known id to a mistyped one, or null. */
 function closest(word, known) {
@@ -52,11 +55,45 @@ for (const [id, names] of Object.entries(categories))
   for (const l of LANGS) if (!names[l]) err(`categories.yaml/${id}`, `missing name in "${l}"`);
 for (const [id, p] of Object.entries(publishers)) if (!p.name) err(`publishers.yaml/${id}`, "missing name");
 
+/** Problems of an icon file, empty when it is fine. SVG must not run code or load anything from outside. */
+function iconProblems(kind, buf) {
+  const p = [];
+  if (buf.length > ICON_MAX[kind]) p.push(`is ${Math.ceil(buf.length / 1024)} kB, at most ${ICON_MAX[kind] / 1024} kB is allowed`);
+  if (kind === "svg") {
+    const text = buf.toString("utf8");
+    if (!/<svg[\s>]/i.test(text)) p.push("is not an SVG image (no <svg> element)");
+    if (/<script/i.test(text)) p.push("contains <script>");
+    if (/\son[a-z]+\s*=/i.test(text)) p.push("contains an event attribute (onload=, onclick=, ...)");
+    if (/<foreignObject/i.test(text)) p.push("contains <foreignObject> (embedded HTML)");
+    if (/<!ENTITY|<!DOCTYPE/i.test(text)) p.push("contains a DOCTYPE or ENTITY declaration");
+    if (/javascript:/i.test(text)) p.push("contains a javascript: link");
+    if (/(?:xlink:)?href\s*=\s*["'](?!#)/i.test(text)) p.push("links to something outside the file (href must start with #)");
+    if (/url\(\s*["']?(?!#)/i.test(text)) p.push("loads something with url() from outside the file");
+  } else {
+    const sig = "89504e470d0a1a0a";
+    if (buf.length < 24 || buf.subarray(0, 8).toString("hex") !== sig) p.push("is not a PNG image");
+    else {
+      const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
+      if (w !== h) p.push(`must be square, it is ${w}×${h} px`);
+      if (Math.min(w, h) < 128) p.push(`must be at least 128×128 px, it is ${w}×${h} px`);
+    }
+  }
+  return p;
+}
+
 const files = [];
 const serversDir = join(root, "servers");
 for (const pub of readdirSync(serversDir, { withFileTypes: true }).filter((d) => d.isDirectory()))
   for (const f of readdirSync(join(serversDir, pub.name)).filter((f) => f.endsWith(".yaml")))
     files.push({ folder: pub.name, path: join(serversDir, pub.name, f) });
+// An image in servers/ without a YAML file of the same name is a mistake.
+for (const pub of readdirSync(serversDir, { withFileTypes: true }).filter((d) => d.isDirectory()))
+  for (const f of readdirSync(join(serversDir, pub.name)).filter((f) => /\.(svg|png)$/i.test(f))) {
+    if (!/\.(svg|png)$/.test(f)) err(`servers/${pub.name}/${f}`, "the icon extension must be lowercase (.svg or .png)");
+    else if (!existsSync(join(serversDir, pub.name, f.replace(/\.(svg|png)$/, ".yaml"))))
+      err(`servers/${pub.name}/${f}`, "icon without a server", `Name the icon like the server file: ${f.replace(/\.(svg|png)$/, ".yaml")} -> ${f}`);
+  }
+const icons = new Map(); // server id -> { ext, buf }
 
 const details = new Map();
 for (const { folder, path } of files) {
@@ -101,8 +138,21 @@ for (const { folder, path } of files) {
   for (const l of Object.keys(texts))
     for (const k of Object.keys(texts[l]?.input ?? {})) if (!inputs.some((i) => i.id === k)) err(where, `texts.${l}.input.${k} is not an input`);
 
+  // Icon: <id>.svg (preferred) or <id>.png next to the server file. Without one the app shows initials.
+  const base = path.replace(/\.yaml$/, "");
+  const found = ["svg", "png"].filter((ext) => existsSync(`${base}.${ext}`));
+  if (found.length > 1) err(where, "has both an .svg and a .png icon", "Keep only one of them (SVG is preferred).");
+  else if (found.length === 1) {
+    const ext = found[0];
+    const buf = readFileSync(`${base}.${ext}`);
+    const problems = iconProblems(ext, buf);
+    for (const msg of problems) err(`${where.replace(/\.yaml$/, "")}.${ext}`, `the icon ${msg}`);
+    if (!problems.length && y.id) icons.set(y.id, { ext, buf });
+  } else warnings.push(`${where}: no icon (${where.split("/").pop().replace(/\.yaml$/, "")}.svg or .png), the app shows initials`);
+
   const { texts: _t, inputs: _i, ...rest } = y;
-  details.set(y.id, { ...rest, description: en?.description ?? "", inputs, texts, tags: y.tags ?? [], verified: !!y.verified, requires: y.requires ?? [] });
+  const icon = icons.has(y.id) ? `icons/${y.id}.${icons.get(y.id).ext}` : undefined;
+  details.set(y.id, { ...rest, ...(icon ? { icon } : {}), description: en?.description ?? "", inputs, texts, tags: y.tags ?? [], verified: !!y.verified, requires: y.requires ?? [] });
 }
 
 if (errors.length) {
@@ -114,18 +164,20 @@ if (errors.length) {
   }
   process.exit(1);
 }
-console.log(`OK: ${details.size} server(s), ${Object.keys(publishers).length} publisher(s), ${Object.keys(categories).length} categories, ${Object.keys(tags).length} tags.`);
+for (const w of warnings) console.log(`Note: ${w}`);
+console.log(`OK: ${details.size} server(s), ${icons.size} icon(s), ${Object.keys(publishers).length} publisher(s), ${Object.keys(categories).length} categories, ${Object.keys(tags).length} tags.`);
 if (check) process.exit(0);
 
 // ---- generate ----
-const out = new Map(); // relative path in dist -> text
+const out = new Map(); // relative path in dist -> text (or the bytes of an icon)
 const ids = [...details.keys()].sort();
 const index = [];
 for (const id of ids) {
   const d = details.get(id);
   const body = stable(d);
   out.set(`servers/${id}.json`, body);
-  index.push({ id, name: d.name, publisher: d.publisher, category: d.category, tags: d.tags, verified: d.verified, summary: d.texts.en.summary, sha256: sha(body) });
+  index.push({ id, name: d.name, publisher: d.publisher, category: d.category, tags: d.tags, verified: d.verified, ...(d.icon ? { icon: d.icon } : {}), summary: d.texts.en.summary, sha256: sha(body) });
+  if (icons.has(id)) out.set(d.icon, icons.get(id).buf);
 }
 out.set("index.json", stable(index));
 for (const l of LANGS.filter((l) => l !== "en")) {
@@ -144,13 +196,14 @@ const mPath = join(dist, "manifest.json");
 const prev = existsSync(mPath) ? JSON.parse(readFileSync(mPath, "utf8")) : null;
 const now = new Date();
 const today = `${now.getUTCFullYear()}.${String(now.getUTCMonth() + 1).padStart(2, "0")}.${String(now.getUTCDate()).padStart(2, "0")}`;
-if (prev && prev.contentHash === contentHash && prev.schema === SCHEMA && prev.minAppVersion === MIN_APP) version = prev.version;
+const minApp = icons.size ? MIN_APP_ICONS : MIN_APP;
+if (prev && prev.contentHash === contentHash && prev.schema === SCHEMA && prev.minAppVersion === minApp) version = prev.version;
 else if (prev?.version?.startsWith(today + ".")) version = `${today}.${Number(prev.version.split(".")[3]) + 1}`;
 else version = `${today}.1`;
 const manifest = {
   schema: SCHEMA,
   version,
-  minAppVersion: MIN_APP,
+  minAppVersion: minApp,
   serverCount: ids.length,
   contentHash,
   files: Object.fromEntries([...out].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, sha(v)])),
