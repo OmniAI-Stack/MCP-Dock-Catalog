@@ -1,0 +1,7 @@
+# Publishers: the key is the folder name under servers/.
+google:
+  name: Google
+  homepage: https://about.google
+modelcontextprotocol:
+  name: Model Context Protocol
+  homepage: https://modelcontextprotocol.io

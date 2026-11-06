@@ -1,0 +1,68 @@
+# Google Stitch – remote MCP server with an API key.
+id: google-stitch
+name: Google Stitch
+legacyNames: [stitch]
+publisher: google
+homepage: https://stitch.withgoogle.com
+verified: true
+category: design
+tags: [design, ui]
+
+transport:
+  type: remote-http
+  url: https://stitch.googleapis.com/mcp
+  headers:
+    - name: X-Goog-Api-Key
+      value: "{{apiKey}}"
+
+inputs:
+  - id: apiKey
+    secret: true
+    placeholder: AQ...
+
+test:
+  tool: list_projects
+
+texts:
+  en:
+    summary: AI design of user interfaces.
+    description: Google Stitch designs user interfaces with AI. Through this server your AI client can create projects, generate and edit screens, produce variants and manage design systems.
+    input:
+      apiKey:
+        label: API key
+        help: Create the API key in the Google Stitch app.
+  cs:
+    summary: Návrh uživatelských rozhraní pomocí AI.
+    description: Google Stitch navrhuje uživatelská rozhraní pomocí AI. Přes tento server může vaše AI aplikace zakládat projekty, generovat a upravovat obrazovky, vytvářet varianty a spravovat design systémy.
+    input:
+      apiKey:
+        label: API klíč
+        help: API klíč vytvoříte v aplikaci Google Stitch.
+  de:
+    summary: KI-Entwurf von Benutzeroberflächen.
+    description: Google Stitch entwirft Benutzeroberflächen mit KI. Über diesen Server kann Ihre KI-App Projekte anlegen, Bildschirme erzeugen und bearbeiten, Varianten erstellen und Designsysteme verwalten.
+    input:
+      apiKey:
+        label: API-Schlüssel
+        help: Den API-Schlüssel erstellen Sie in der Google-Stitch-App.
+  es:
+    summary: Diseño de interfaces de usuario con IA.
+    description: Google Stitch diseña interfaces de usuario con IA. A través de este servidor tu cliente de IA puede crear proyectos, generar y editar pantallas, producir variantes y gestionar sistemas de diseño.
+    input:
+      apiKey:
+        label: Clave de API
+        help: Crea la clave de API en la aplicación Google Stitch.
+  fr:
+    summary: Conception d’interfaces utilisateur avec l’IA.
+    description: Google Stitch conçoit des interfaces utilisateur avec l'IA. Via ce serveur, votre client d'IA peut créer des projets, générer et modifier des écrans, produire des variantes et gérer des systèmes de design.
+    input:
+      apiKey:
+        label: Clé d'API
+        help: Créez la clé d'API dans l'application Google Stitch.
+  pt:
+    summary: Design de interfaces de usuário com IA.
+    description: O Google Stitch projeta interfaces de usuário com IA. Por meio deste servidor, seu cliente de IA pode criar projetos, gerar e editar telas, produzir variantes e gerenciar sistemas de design.
+    input:
+      apiKey:
+        label: Chave de API
+        help: Crie a chave de API no aplicativo Google Stitch.

@@ -1,0 +1,96 @@
+{
+  "id": "filesystem",
+  "name": "Filesystem",
+  "publisher": "modelcontextprotocol",
+  "homepage": "https://github.com/modelcontextprotocol/servers",
+  "verified": true,
+  "category": "files",
+  "tags": [
+    "files",
+    "local"
+  ],
+  "requires": [
+    "node"
+  ],
+  "transport": {
+    "type": "stdio",
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "{{directory}}"
+    ]
+  },
+  "description": "Official reference server that lets your AI client read and write files inside the folders you choose.",
+  "inputs": [
+    {
+      "id": "directory",
+      "kind": "folder",
+      "multiple": true,
+      "label": "Folders the AI may access",
+      "help": "Only these folders and their subfolders are exposed."
+    }
+  ],
+  "texts": {
+    "en": {
+      "summary": "Lets the AI read and write files in chosen folders.",
+      "description": "Official reference server that lets your AI client read and write files inside the folders you choose.",
+      "input": {
+        "directory": {
+          "label": "Folders the AI may access",
+          "help": "Only these folders and their subfolders are exposed."
+        }
+      }
+    },
+    "cs": {
+      "summary": "AI čte a zapisuje soubory ve zvolených složkách.",
+      "description": "Oficiální referenční server, který umožní vaší AI aplikaci číst a zapisovat soubory ve složkách, které zvolíte.",
+      "input": {
+        "directory": {
+          "label": "Složky, ke kterým má AI přístup",
+          "help": "Zpřístupní se jen tyto složky a jejich podsložky."
+        }
+      }
+    },
+    "de": {
+      "summary": "KI liest und schreibt Dateien in gewählten Ordnern.",
+      "description": "Offizieller Referenzserver, mit dem Ihre KI-App Dateien in den von Ihnen gewählten Ordnern lesen und schreiben kann.",
+      "input": {
+        "directory": {
+          "label": "Ordner, auf die die KI zugreifen darf",
+          "help": "Nur diese Ordner und ihre Unterordner werden freigegeben."
+        }
+      }
+    },
+    "es": {
+      "summary": "La IA lee y escribe archivos en las carpetas elegidas.",
+      "description": "Servidor de referencia oficial que permite a tu aplicación de IA leer y escribir archivos en las carpetas que elijas.",
+      "input": {
+        "directory": {
+          "label": "Carpetas a las que puede acceder la IA",
+          "help": "Solo se exponen estas carpetas y sus subcarpetas."
+        }
+      }
+    },
+    "fr": {
+      "summary": "L’IA lit et écrit des fichiers dans les dossiers choisis.",
+      "description": "Serveur de référence officiel qui permet à votre application d’IA de lire et d’écrire des fichiers dans les dossiers que vous choisissez.",
+      "input": {
+        "directory": {
+          "label": "Dossiers auxquels l’IA peut accéder",
+          "help": "Seuls ces dossiers et leurs sous-dossiers sont exposés."
+        }
+      }
+    },
+    "pt": {
+      "summary": "A IA lê e grava arquivos nas pastas escolhidas.",
+      "description": "Servidor de referência oficial que permite que o seu aplicativo de IA leia e grave arquivos nas pastas que você escolher.",
+      "input": {
+        "directory": {
+          "label": "Pastas às quais a IA pode acessar",
+          "help": "Apenas estas pastas e suas subpastas são expostas."
+        }
+      }
+    }
+  }
+}

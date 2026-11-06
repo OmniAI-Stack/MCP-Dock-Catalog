@@ -1,0 +1,74 @@
+{
+  "files": {
+    "en": "Files",
+    "cs": "Soubory",
+    "de": "Dateien",
+    "es": "Archivos",
+    "fr": "Fichiers",
+    "pt": "Arquivos"
+  },
+  "design": {
+    "en": "Design",
+    "cs": "Design",
+    "de": "Design",
+    "es": "Diseño",
+    "fr": "Design",
+    "pt": "Design"
+  },
+  "development": {
+    "en": "Development",
+    "cs": "Vývoj",
+    "de": "Entwicklung",
+    "es": "Desarrollo",
+    "fr": "Développement",
+    "pt": "Desenvolvimento"
+  },
+  "data": {
+    "en": "Data",
+    "cs": "Data",
+    "de": "Daten",
+    "es": "Datos",
+    "fr": "Données",
+    "pt": "Dados"
+  },
+  "web": {
+    "en": "Web",
+    "cs": "Web",
+    "de": "Web",
+    "es": "Web",
+    "fr": "Web",
+    "pt": "Web"
+  },
+  "productivity": {
+    "en": "Productivity",
+    "cs": "Produktivita",
+    "de": "Produktivität",
+    "es": "Productividad",
+    "fr": "Productivité",
+    "pt": "Produtividade"
+  },
+  "communication": {
+    "en": "Communication",
+    "cs": "Komunikace",
+    "de": "Kommunikation",
+    "es": "Comunicación",
+    "fr": "Communication",
+    "pt": "Comunicação"
+  },
+  "ai": {
+    "en": "AI",
+    "cs": "AI",
+    "de": "KI",
+    "es": "IA",
+    "fr": "IA",
+    "pt": "IA"
+  },
+  "other": {
+    "en": "Other",
+    "cs": "Ostatní",
+    "de": "Sonstiges",
+    "es": "Otros",
+    "fr": "Autres",
+    "pt": "Outros"
+  }
+}

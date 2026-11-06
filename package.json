@@ -1,0 +1,8 @@
+{
+  "name": "mcp-dock-catalog",
+  "private": true,
+  "type": "module",
+  "description": "Catalog of MCP servers for MCP Dock",
+  "scripts": { "build": "node scripts/run.mjs", "check": "node scripts/run.mjs --check" },
+  "dependencies": { "yaml": "2.8.1" }
+}

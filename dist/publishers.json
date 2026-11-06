@@ -1,0 +1,10 @@
+{
+  "google": {
+    "name": "Google",
+    "homepage": "https://about.google"
+  },
+  "modelcontextprotocol": {
+    "name": "Model Context Protocol",
+    "homepage": "https://modelcontextprotocol.io"
+  }
+}

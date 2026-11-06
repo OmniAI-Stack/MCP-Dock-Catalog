@@ -1,0 +1,34 @@
+{
+  "design": {
+    "en": "Design",
+    "cs": "Design",
+    "de": "Design",
+    "es": "Diseño",
+    "fr": "Design",
+    "pt": "Design"
+  },
+  "ui": {
+    "en": "UI",
+    "cs": "UI",
+    "de": "UI",
+    "es": "UI",
+    "fr": "UI",
+    "pt": "UI"
+  },
+  "files": {
+    "en": "Files",
+    "cs": "Soubory",
+    "de": "Dateien",
+    "es": "Archivos",
+    "fr": "Fichiers",
+    "pt": "Arquivos"
+  },
+  "local": {
+    "en": "Local",
+    "cs": "Lokální",
+    "de": "Lokal",
+    "es": "Local",
+    "fr": "Local",
+    "pt": "Local"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "version": "2026.11.06.2",
+  "minAppVersion": "0.1.32",
+  "serverCount": 2,
+  "contentHash": "428345c54abf3d4e8ab425e62d731aead5d8536ecd246781e7afc14c33cced38",
+  "files": {
+    "categories.json": "7741e90d064d516d0bee115d9da7332f6e4d09d38b68e2be72c5ef36ae5819f8",
+    "index.cs.json": "4b08d2514430fd142ee8bfe6adcf08be83dcbe9599d4f200679324ffecedaf4f",
+    "index.de.json": "1e77addb246184906ffc27288f9a9e6585f13e952cdfea6adc286e6104c49419",
+    "index.es.json": "d060f4612e10418449cd65536236a9c0a51615458a6d7cce1306902f32bde21b",
+    "index.fr.json": "16f23856949eed37cea767f654a974da4c1efc992d9ed3b82754bde477658af6",
+    "index.json": "4725427984d65e4ffc5b570d2d3a58353f46e5f239627db33c78a55fa9a7631d",
+    "index.pt.json": "1b727e288b0634f1c5964f73f3924d9533ce3f00ec34c8166c2e032d6636a223",
+    "publishers.json": "6d9c37141881524f79c0f1b7e9dca7201e4c7fdd89a764cf18134e8cd189aa8a",
+    "servers/filesystem.json": "f09bd705bb6114c165ac3515f6aee42af6f3d1866ee9dec1003f25023022bbaf",
+    "servers/google-stitch.json": "e0c678c001cc539d9b5ad07734815c2a7c474f9e43ad380f99ddfa4a87a2c3f1",
+    "tags.json": "0653e07828c7d0227da13e74e8cb736170702572579c65caed3e5ea38b1d5f3e"
+  }
+}
