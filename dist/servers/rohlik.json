@@ -1,0 +1,47 @@
+{
+  "id": "rohlik",
+  "name": "Rohlik",
+  "publisher": "rohlik",
+  "homepage": "https://www.rohlik.cz",
+  "docs": "https://www.rohlik.cz/mcp-docs",
+  "category": "other",
+  "transport": {
+    "type": "remote-http",
+    "url": "https://mcp.rohlik.cz/mcp",
+    "headers": [],
+    "auth": {
+      "type": "oauth"
+    }
+  },
+  "description": "Rohlík is an online grocery store. Through this server your AI app can search products, put together a shopping cart and work with your orders. You sign in with your Rohlík account in the browser; the order is finished on the Rohlík website.",
+  "inputs": [],
+  "texts": {
+    "en": {
+      "summary": "Grocery shopping at Rohlík.",
+      "description": "Rohlík is an online grocery store. Through this server your AI app can search products, put together a shopping cart and work with your orders. You sign in with your Rohlík account in the browser; the order is finished on the Rohlík website."
+    },
+    "cs": {
+      "summary": "Nákup potravin na Rohlíku.",
+      "description": "Rohlík je online obchod s potravinami. Přes tento server může vaše AI aplikace hledat zboží, sestavit nákupní košík a pracovat s vašimi objednávkami. Přihlašujete se svým účtem Rohlíku v prohlížeči, objednávku dokončíte na webu Rohlíku."
+    },
+    "de": {
+      "summary": "Lebensmitteleinkauf bei Rohlík.",
+      "description": "Rohlík ist ein Online-Lebensmittelgeschäft. Über diesen Server kann Ihre KI-App Produkte suchen, einen Warenkorb zusammenstellen und mit Ihren Bestellungen arbeiten. Sie melden sich im Browser mit Ihrem Rohlík-Konto an; die Bestellung schließen Sie auf der Rohlík-Website ab."
+    },
+    "es": {
+      "summary": "Compra de alimentos en Rohlík.",
+      "description": "Rohlík es una tienda de alimentación en línea. A través de este servidor tu aplicación de IA puede buscar productos, preparar el carrito y trabajar con tus pedidos. Inicias sesión con tu cuenta de Rohlík en el navegador; el pedido se completa en la web de Rohlík."
+    },
+    "fr": {
+      "summary": "Courses alimentaires chez Rohlík.",
+      "description": "Rohlík est une épicerie en ligne. Via ce serveur, votre application d'IA peut chercher des produits, composer un panier et travailler avec vos commandes. Vous vous connectez avec votre compte Rohlík dans le navigateur ; la commande se termine sur le site de Rohlík."
+    },
+    "pt": {
+      "summary": "Compras de supermercado na Rohlík.",
+      "description": "A Rohlík é um supermercado online. Por meio deste servidor, seu app de IA pode procurar produtos, montar o carrinho e trabalhar com seus pedidos. Você entra com sua conta Rohlík no navegador; o pedido é concluído no site da Rohlík."
+    }
+  },
+  "tags": [],
+  "verified": false,
+  "requires": []
+}

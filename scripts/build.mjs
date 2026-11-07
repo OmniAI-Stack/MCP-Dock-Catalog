@@ -14,6 +14,10 @@ const check = process.argv.includes("--check");
 const SCHEMA = 1; // bump only on a breaking change of the generated format
 const MIN_APP = "0.1.32";
 const MIN_APP_ICONS = "0.1.43"; // first app version that downloads icons
+const MIN_APP_OAUTH = "0.1.62"; // first app version that can sign in with OAuth (transport.auth)
+// AI applications a server can be marked for in "apps" (the ids of clients/clients.json in MCP Dock).
+const APPS = ["claude-desktop", "cursor", "cherry-studio", "antigravity", "cline", "chatgpt-desktop"];
+const APP_STATUS = ["tested", "works", "avoid"];
 const ICON_MAX = { svg: 50 * 1024, png: 100 * 1024 };
 const LANGS = ["en", "cs", "de", "es", "fr", "pt"];
 const errors = []; // { where, msg, hint }
@@ -94,6 +98,7 @@ for (const pub of readdirSync(serversDir, { withFileTypes: true }).filter((d) =>
       err(`servers/${pub.name}/${f}`, "icon without a server", `Name the icon like the server file: ${f.replace(/\.(svg|png)$/, ".yaml")} -> ${f}`);
   }
 const icons = new Map(); // server id -> { ext, buf }
+const oauthServers = new Set(); // ids of servers that sign in with OAuth
 
 const details = new Map();
 for (const { folder, path } of files) {
@@ -121,6 +126,45 @@ for (const { folder, path } of files) {
   if (t.type === "stdio") { if (!t.command) err(where, "stdio needs a command"); }
   else if (t.type === "remote-http") { if (!/^https:\/\//.test(t.url ?? "")) err(where, "remote-http needs an https url"); }
   else err(where, `unknown transport type "${t.type}"`);
+  if (t.auth != null) {
+    const a = t.auth;
+    if (t.type !== "remote-http") err(where, "transport.auth is only for remote-http servers");
+    else if (typeof a !== "object" || a.type !== "oauth")
+      err(where, 'transport.auth.type must be "oauth"', "Servers with an API key use a header with a {{placeholder}} instead of auth.");
+    else {
+      for (const k of Object.keys(a)) if (!["type", "scopes", "clientId"].includes(k)) err(where, `unknown key transport.auth.${k}`, 'Allowed: type, scopes, clientId.');
+      if (a.scopes != null && (!Array.isArray(a.scopes) || a.scopes.some((x) => typeof x !== "string" || !x.trim())))
+        err(where, "transport.auth.scopes must be a list of texts", "For example: scopes: [openid, email]. Leave it out to ask for the scopes the server lists.");
+      if (a.clientId != null && (typeof a.clientId !== "string" || !a.clientId.trim()))
+        err(where, "transport.auth.clientId must be a text", "Leave it out when the server registers clients itself.");
+      oauthServers.add(y.id);
+    }
+  }
+
+  // apps: how the server does in each AI application. Missing application = "works" (should work, not tried).
+  const apps = {};
+  if (y.apps != null && (typeof y.apps !== "object" || Array.isArray(y.apps))) err(where, '"apps" must be a mapping', "For example:\n    apps:\n      claude-desktop: tested");
+  else for (const [app, v] of Object.entries(y.apps ?? {})) {
+    if (!APPS.includes(app)) {
+      const m = closest(app, APPS);
+      err(where, `unknown app "${app}" in apps`, `${m ? `Did you mean "${m}"? ` : ""}Known apps: ${APPS.join(", ")}.`);
+      continue;
+    }
+    const status = typeof v === "string" ? v : v?.status;
+    const note = typeof v === "object" && v ? v.note ?? {} : {};
+    if (!APP_STATUS.includes(status)) { err(where, `apps.${app}: status must be one of ${APP_STATUS.join(", ")}`); continue; }
+    if (typeof v === "object" && v) for (const k of Object.keys(v)) if (!["status", "note"].includes(k)) err(where, `apps.${app}: unknown key "${k}"`, "Allowed: status, note.");
+    if (typeof note !== "object" || Array.isArray(note)) { err(where, `apps.${app}.note must be a mapping by language`); continue; }
+    for (const [l, text] of Object.entries(note)) {
+      if (!LANGS.includes(l)) err(where, `apps.${app}.note: unknown language "${l}"`);
+      else if (typeof text !== "string" || !text.trim()) err(where, `apps.${app}.note.${l} must be a text`);
+    }
+    if (status === "avoid" && !note.en)
+      err(where, `apps.${app} is "avoid" but has no note`, `Say briefly why, at least in English:\n    ${app}:\n      status: avoid\n      note:\n        en: ...\n        cs: ...`);
+    if (status !== "avoid" && Object.keys(note).length) warnings.push(`${where}: apps.${app} has a note, but the app shows notes only for "avoid"`);
+    if (status === "works" && !Object.keys(note).length) warnings.push(`${where}: apps.${app}: works is the default, the line can be left out`);
+    apps[app] = Object.keys(note).length ? { status, note } : { status };
+  }
 
   const texts = y.texts ?? {};
   for (const l of Object.keys(texts)) if (!LANGS.includes(l)) err(where, `unknown language "${l}"`);
@@ -150,9 +194,9 @@ for (const { folder, path } of files) {
     if (!problems.length && y.id) icons.set(y.id, { ext, buf });
   } else warnings.push(`${where}: no icon (${where.split("/").pop().replace(/\.yaml$/, "")}.svg or .png), the app shows initials`);
 
-  const { texts: _t, inputs: _i, ...rest } = y;
+  const { texts: _t, inputs: _i, apps: _a, ...rest } = y;
   const icon = icons.has(y.id) ? `icons/${y.id}.${icons.get(y.id).ext}` : undefined;
-  details.set(y.id, { ...rest, ...(icon ? { icon } : {}), description: en?.description ?? "", inputs, texts, tags: y.tags ?? [], verified: !!y.verified, requires: y.requires ?? [] });
+  details.set(y.id, { ...rest, ...(icon ? { icon } : {}), description: en?.description ?? "", inputs, texts, tags: y.tags ?? [], verified: !!y.verified, requires: y.requires ?? [], ...(Object.keys(apps).length ? { apps } : {}) });
 }
 
 if (errors.length) {
@@ -196,7 +240,11 @@ const mPath = join(dist, "manifest.json");
 const prev = existsSync(mPath) ? JSON.parse(readFileSync(mPath, "utf8")) : null;
 const now = new Date();
 const today = `${now.getUTCFullYear()}.${String(now.getUTCMonth() + 1).padStart(2, "0")}.${String(now.getUTCDate()).padStart(2, "0")}`;
-const minApp = icons.size ? MIN_APP_ICONS : MIN_APP;
+// The oldest app version that understands everything in the catalog. "apps" needs nothing: older apps ignore it.
+const newer = (a, b) => (a.split(".").map(Number).reduce((r, n, i) => r || n - Number(b.split(".")[i] ?? 0), 0) >= 0 ? a : b);
+let minApp = MIN_APP;
+if (icons.size) minApp = newer(MIN_APP_ICONS, minApp);
+if (oauthServers.size) minApp = newer(MIN_APP_OAUTH, minApp);
 if (prev && prev.contentHash === contentHash && prev.schema === SCHEMA && prev.minAppVersion === minApp) version = prev.version;
 else if (prev?.version?.startsWith(today + ".")) version = `${today}.${Number(prev.version.split(".")[3]) + 1}`;
 else version = `${today}.1`;

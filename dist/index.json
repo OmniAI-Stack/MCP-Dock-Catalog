@@ -23,6 +23,16 @@
     ],
     "verified": true,
     "summary": "AI design of user interfaces.",
-    "sha256": "e0c678c001cc539d9b5ad07734815c2a7c474f9e43ad380f99ddfa4a87a2c3f1"
+    "sha256": "ed77fbc66060f11f090771f27c983308dbb53208fde469f8c4b2566633c45e0e"
+  },
+  {
+    "id": "rohlik",
+    "name": "Rohlik",
+    "publisher": "rohlik",
+    "category": "other",
+    "tags": [],
+    "verified": false,
+    "summary": "Grocery shopping at Rohlík.",
+    "sha256": "8d497d581ad1637a391d4af9121567618620e5c12dcc25d67f5730c2176fd4ba"
   }
 ]

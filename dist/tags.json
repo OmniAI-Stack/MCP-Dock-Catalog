@@ -30,5 +30,13 @@
     "es": "Local",
     "fr": "Local",
     "pt": "Local"
+  },
+  "mail": {
+    "en": "Mail",
+    "cs": "Pošta",
+    "de": "Mail",
+    "es": "Correo",
+    "fr": "Courriel",
+    "pt": "Correio"
   }
 }

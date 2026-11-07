@@ -23,6 +23,10 @@ inputs:
 test:
   tool: list_projects
 
+# How the server does in each AI app; an app that is missing counts as "works" (should work, not tried).
+apps:
+  claude-desktop: tested
+
 texts:
   en:
     summary: AI design of user interfaces.

@@ -97,5 +97,10 @@
       }
     }
   },
-  "requires": []
+  "requires": [],
+  "apps": {
+    "claude-desktop": {
+      "status": "tested"
+    }
+  }
 }
